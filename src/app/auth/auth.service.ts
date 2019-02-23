@@ -90,7 +90,4 @@ export class AuthService {
 
    ));
   }
-  pruebagit() {
-    return true;
-  }
 }
