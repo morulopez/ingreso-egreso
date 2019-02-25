@@ -6,18 +6,39 @@ import * as firebase from 'firebase';
 import { map } from 'rxjs/operators';
 import { User } from './user.model';
 import { AngularFirestore } from '@angular/fire/firestore';
+import { Store } from '@ngrx/store';
+import { AppState } from '../app.reducer';
+import { ActivarLoadingAction, DesactivarLoadingAction } from '../shared/ui.actions';
+import { Subscription } from 'rxjs';
+import { SetUserAction } from './register/auth.actions';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  constructor( private afAuth: AngularFireAuth, private router: Router, private afDB: AngularFirestore) {}
+  private userSubscription: Subscription = new Subscription();
+  constructor( private afAuth: AngularFireAuth, private router: Router, private afDB: AngularFirestore, private store: Store<AppState>) {}
 
   initAuthListener() {
     this.afAuth.authState.subscribe( (fbUser: firebase.User) => {
-      console.log(fbUser);
-    });
-  }
+      if ( fbUser) {
+        this.userSubscription = this.afDB.doc(`${fbUser.uid}/usuario`).valueChanges()
+         .subscribe( (usuarioOBJ: any) => {
+          const newUser = new User(usuarioOBJ);
+         console.log( newUser );
+
+         this.store.dispatch( new SetUserAction( newUser));
+
+
+      });
+
+    } else {
+      this.userSubscription.unsubscribe();
+
+     }
+});
+    }
+
 
   /*  Aqui tenemos esta funcion transformada en promesa para manejar los errores desde el componente
 
@@ -40,6 +61,8 @@ export class AuthService {
 
   /* Aqui tenemos una funcion normal para manejar los errores con la libreria sweetalert2*/
   crearUsuario( nombre: string, email: string, password: string) {
+
+    this.store.dispatch(new ActivarLoadingAction());
       this.afAuth.auth.createUserWithEmailAndPassword( email, password)
       .then( resp => {
         const user: User = {
@@ -52,19 +75,24 @@ export class AuthService {
        .then(() => {
        this.router.navigate(['/']);
       });
+      this.store.dispatch(new DesactivarLoadingAction());
       })
       .catch( error => {
+        this.store.dispatch(new DesactivarLoadingAction());
         console.error(error);
         Swal.fire('Error en el login', 'la contraseña es mínimo 6 caracteres o el email existe', 'error');
       });
   }
   login( email: string, password: string) {
+    this.store.dispatch(new ActivarLoadingAction());
       this.afAuth.auth.signInWithEmailAndPassword( email, password)
       .then( resp => {
+        this.store.dispatch(new DesactivarLoadingAction());
         /*console.log( resp );*/
        this.router.navigate(['/']);
       })
       .catch( error => {
+        this.store.dispatch(new DesactivarLoadingAction());
         console.error(error);
         Swal.fire('Error en el login', 'la contraseña o el email no son correctos', 'error');
        });
