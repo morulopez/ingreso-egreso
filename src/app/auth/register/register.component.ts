@@ -12,7 +12,7 @@ import { AppState } from 'src/app/app.reducer';
 export class RegisterComponent implements OnInit, OnDestroy {
   error;
   cargando: Boolean;
-  subscription: Subscription;
+  subscription: Subscription = new Subscription();
   constructor( public authService: AuthService, private store: Store<AppState>) { }
 
   ngOnInit() {

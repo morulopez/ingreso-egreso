@@ -11,12 +11,12 @@ import { AppState } from '../app.reducer';
 import { ActivarLoadingAction, DesactivarLoadingAction } from '../shared/ui.actions';
 import { Subscription } from 'rxjs';
 import { SetUserAction } from './register/auth.actions';
-
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private userSubscription: Subscription = new Subscription();
+  public  usuario: User;
   constructor( private afAuth: AngularFireAuth, private router: Router, private afDB: AngularFirestore, private store: Store<AppState>) {}
 
   initAuthListener() {
@@ -25,14 +25,12 @@ export class AuthService {
         this.userSubscription = this.afDB.doc(`${fbUser.uid}/usuario`).valueChanges()
          .subscribe( (usuarioOBJ: any) => {
           const newUser = new User(usuarioOBJ);
-         console.log( newUser );
-
+          this.usuario = newUser;
          this.store.dispatch( new SetUserAction( newUser));
-
-
       });
 
     } else {
+      this.usuario = null;
       this.userSubscription.unsubscribe();
 
      }
@@ -98,7 +96,7 @@ export class AuthService {
        });
   }
   logout() {
-    this.afAuth.auth.signOut().then( resp => {
+    this.afAuth.auth.signOut().then( () => {
       /*console.log('promesa resuelta');*/
       this.router.navigate(['/login']);
     }).catch( err => {
@@ -117,5 +115,8 @@ export class AuthService {
       }
 
    ));
+  }
+  getUsuario() {
+    return {...this.usuario};
   }
 }
